@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { v4 as uuidv4 } from 'uuid'
 import { ILlmService, LLM_SERVICE } from '@application/ports/llm.port'
 import { IStorageService } from '@application/ports/storage.port'
@@ -18,6 +18,8 @@ const MAX_RETRIES = 3
 
 @Injectable()
 export class ProcessAnalysisUseCase {
+  private readonly logger = new Logger(ProcessAnalysisUseCase.name)
+
   constructor(
     private readonly llmService: ILlmService,
     private readonly storageService: IStorageService,
@@ -33,7 +35,7 @@ export class ProcessAnalysisUseCase {
     const startTime = Date.now()
     const { analysisId, fileUrl, fileType } = payload
 
-    console.log(`[ProcessAnalysis] Starting analysis for ${analysisId}`)
+    this.logger.log(`Starting analysis for ${analysisId}`)
 
     let fileBuffer: Buffer
     try {
@@ -60,7 +62,7 @@ export class ProcessAnalysisUseCase {
 
     while (retryCount < MAX_RETRIES) {
       try {
-        console.log(`[ProcessAnalysis] Calling LLM (attempt ${retryCount + 1})`)
+        this.logger.log(`Calling LLM (attempt ${retryCount + 1})`)
         llmResponse = await this.llmService.analyzeImage(
           processedImage.buffer,
           processedImage.mimeType,
@@ -73,9 +75,11 @@ export class ProcessAnalysisUseCase {
           break
         }
 
-        console.warn(
-          `[ProcessAnalysis] LLM response invalid on attempt ${retryCount + 1}:`,
-          validationResult.checks.filter((c) => !c.passed).map((c) => c.name),
+        this.logger.warn(
+          `LLM response invalid on attempt ${retryCount + 1}: ${validationResult.checks
+            .filter((c) => !c.passed)
+            .map((c) => c.name)
+            .join(', ')}`,
         )
         retryCount++
 
@@ -83,10 +87,7 @@ export class ProcessAnalysisUseCase {
           await this.delay(1000 * Math.pow(2, retryCount - 1))
         }
       } catch (err: any) {
-        console.error(
-          `[ProcessAnalysis] LLM call failed on attempt ${retryCount + 1}:`,
-          err.message,
-        )
+        this.logger.error(`LLM call failed on attempt ${retryCount + 1}: ${err.message}`)
         retryCount++
 
         if (retryCount < MAX_RETRIES) {
@@ -139,9 +140,9 @@ export class ProcessAnalysisUseCase {
 
     try {
       await this.analysisResultRepository.save(analysisResult)
-      console.log(`[ProcessAnalysis] Result saved to DynamoDB: ${resultId}`)
+      this.logger.log(`Result saved to DynamoDB: ${resultId}`)
     } catch (err: any) {
-      console.error('[ProcessAnalysis] Failed to save result:', err.message)
+      this.logger.error(`Failed to save result: ${err.message}`)
       await this.publishFailure(analysisId, 'PERSISTENCE_ERROR', err.message, retryCount)
       return
     }
@@ -159,7 +160,7 @@ export class ProcessAnalysisUseCase {
       processingTimeMs,
     })
 
-    console.log(`[ProcessAnalysis] Analysis complete for ${analysisId} in ${processingTimeMs}ms`)
+    this.logger.log(`Analysis complete for ${analysisId} in ${processingTimeMs}ms`)
   }
 
   private async publishFailure(
@@ -171,7 +172,7 @@ export class ProcessAnalysisUseCase {
     try {
       await this.eventPublisher.publishAnalysisFailed({ analysisId, error, message, retryCount })
     } catch (err: any) {
-      console.error('[ProcessAnalysis] Failed to publish failure event:', err.message)
+      this.logger.error(`Failed to publish failure event: ${err.message}`)
     }
   }
 

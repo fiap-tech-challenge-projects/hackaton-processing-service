@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import * as sharp from 'sharp'
+import sharp from 'sharp'
 import { InvalidFileTypeError, ImageTooSmallError } from '@shared/exceptions/domain.exception'
 
 export interface ProcessedImage {
@@ -53,21 +53,20 @@ export class PreProcessorService {
     return { buffer: processedBuffer, mimeType, dimensions: { width, height } }
   }
 
-  private async handlePdf(file: Buffer): Promise<ProcessedImage> {
-    // For PDF, we convert the first page to PNG using sharp if possible
-    // Sharp does not natively support PDF; in production you'd use pdf-to-img or pdftoppm.
-    // Here we attempt to use sharp to detect and fall back gracefully.
-    try {
-      const image = sharp(file, { pages: 1 })
-      const pngBuffer = await image.png().toBuffer()
-      const metadata = await sharp(pngBuffer).metadata()
-      return {
-        buffer: pngBuffer,
-        mimeType: 'image/png',
-        dimensions: { width: metadata.width || 1024, height: metadata.height || 1024 },
-      }
-    } catch {
-      throw new InvalidFileTypeError('application/pdf (conversion failed - sharp does not support PDF natively)')
+  private handlePdf(file: Buffer): ProcessedImage {
+    // Sharp does not support PDF natively. Claude and GPT-4o both accept PDF input
+    // via base64, so we pass the raw buffer directly with its original MIME type.
+    // File size is the only constraint worth enforcing here (50 MB hard limit).
+    const MAX_PDF_SIZE = 50 * 1024 * 1024
+    if (file.byteLength > MAX_PDF_SIZE) {
+      throw new InvalidFileTypeError('application/pdf (file exceeds 50 MB size limit)')
+    }
+
+    return {
+      buffer: file,
+      mimeType: 'application/pdf',
+      // PDFs have no pixel dimensions; use sentinel values that callers should ignore
+      dimensions: { width: 0, height: 0 },
     }
   }
 }

@@ -63,7 +63,12 @@ export class OutputValidatorService {
     const isValid = checks.every((c) => c.passed)
     const confidence = this.calculateConfidence(checks)
 
-    return { isValid, checks, confidence, parsed: isValid ? (parsed as LlmAnalysisResponse) : undefined }
+    return {
+      isValid,
+      checks,
+      confidence,
+      parsed: isValid ? (parsed as LlmAnalysisResponse) : undefined,
+    }
   }
 
   private parseJson(rawContent: string): { check: ValidationCheck; data: any } {
@@ -71,7 +76,10 @@ export class OutputValidatorService {
       // Strip markdown code blocks if present
       let content = rawContent.trim()
       if (content.startsWith('```')) {
-        content = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+        content = content
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```$/, '')
+          .trim()
       }
 
       const data = JSON.parse(content)
@@ -193,7 +201,7 @@ export class OutputValidatorService {
     ]
 
     const genericCount = descriptions.filter((d) =>
-      genericPhrases.every((phrase) => d.includes(phrase)),
+      genericPhrases.some((phrase) => d.includes(phrase)),
     ).length
 
     // If more than half the descriptions are generic, flag it
