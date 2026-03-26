@@ -1,8 +1,12 @@
+import { Injectable } from '@nestjs/common'
 import { v4 as uuidv4 } from 'uuid'
 import { ILlmService, LLM_SERVICE } from '@application/ports/llm.port'
 import { IStorageService } from '@application/ports/storage.port'
 import { IEventPublisher } from '@application/ports/event-publisher.port'
-import { IAnalysisResultRepository, ANALYSIS_RESULT_REPOSITORY } from '@domain/repositories/analysis-result.repository'
+import {
+  IAnalysisResultRepository,
+  ANALYSIS_RESULT_REPOSITORY,
+} from '@domain/repositories/analysis-result.repository'
 import { AnalysisResult } from '@domain/entities/analysis-result.entity'
 import { PreProcessorService } from '@infra/ai/pre-processor.service'
 import { PromptService } from '@infra/ai/prompt.service'
@@ -12,6 +16,7 @@ import { AnalysisRequestedEventPayload } from '@application/dtos/analysis-result
 
 const MAX_RETRIES = 3
 
+@Injectable()
 export class ProcessAnalysisUseCase {
   constructor(
     private readonly llmService: ILlmService,
@@ -78,7 +83,10 @@ export class ProcessAnalysisUseCase {
           await this.delay(1000 * Math.pow(2, retryCount - 1))
         }
       } catch (err: any) {
-        console.error(`[ProcessAnalysis] LLM call failed on attempt ${retryCount + 1}:`, err.message)
+        console.error(
+          `[ProcessAnalysis] LLM call failed on attempt ${retryCount + 1}:`,
+          err.message,
+        )
         retryCount++
 
         if (retryCount < MAX_RETRIES) {
@@ -87,7 +95,12 @@ export class ProcessAnalysisUseCase {
       }
     }
 
-    if (!llmResponse || !validationResult || !validationResult.isValid || !validationResult.parsed) {
+    if (
+      !llmResponse ||
+      !validationResult ||
+      !validationResult.isValid ||
+      !validationResult.parsed
+    ) {
       await this.publishFailure(
         analysisId,
         'LLM_RESPONSE_INVALID',

@@ -4,7 +4,7 @@ import { ProcessAnalysisUseCase } from '@application/use-cases/process-analysis.
 import { AnalysisRequestedEventPayload } from '@application/dtos/analysis-result.dto'
 
 const QUEUE_NAME = 'analysis.requested'
-const EXCHANGE_NAME = 'analysis.events'
+const EXCHANGE_NAME = 'hackaton-events'
 const ROUTING_KEY = 'analysis.requested'
 
 @Injectable()

@@ -6,7 +6,7 @@ import {
   AnalysisFailedPayload,
 } from '@application/ports/event-publisher.port'
 
-const EXCHANGE_NAME = 'analysis.events'
+const EXCHANGE_NAME = 'hackaton-events'
 const ROUTING_KEY_PROCESSED = 'analysis.processed'
 const ROUTING_KEY_FAILED = 'analysis.failed'
 

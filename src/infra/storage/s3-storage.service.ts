@@ -28,7 +28,7 @@ export class S3StorageService implements IStorageService {
           : undefined,
     })
 
-    this.bucketName = process.env.S3_BUCKET_NAME || 'hackaton-uploads'
+    this.bucketName = process.env.S3_BUCKET || 'hackaton-uploads'
   }
 
   async download(fileUrl: string): Promise<Buffer> {
