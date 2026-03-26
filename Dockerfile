@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Rebuild sharp for linux/x64 (required for correct native binaries)
 RUN npm rebuild sharp --platform=linux --arch=x64 || true
@@ -28,7 +28,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci --omit=dev
+RUN npm ci --legacy-peer-deps --omit=dev
 
 RUN npm rebuild sharp --platform=linux --arch=x64 || true
 
