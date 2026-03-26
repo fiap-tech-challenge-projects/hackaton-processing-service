@@ -14,9 +14,8 @@ export class DynamoDbAnalysisResultRepository implements IAnalysisResultReposito
   private readonly tableName: string
 
   constructor(private readonly dynamoClient: DynamoDBClient) {
-    const env = process.env.NODE_ENV || 'dev'
-    this.tableName =
-      process.env.DYNAMODB_TABLE_NAME || `hackaton-analysis-results-${env}`
+    const env = process.env.NODE_ENV || 'development'
+    this.tableName = process.env.DYNAMODB_TABLE_NAME || `hackaton-analysis-results-${env}`
   }
 
   async save(result: AnalysisResult): Promise<void> {

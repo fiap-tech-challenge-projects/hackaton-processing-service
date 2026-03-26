@@ -15,7 +15,7 @@ export const appConfig = () => ({
 
   s3: {
     endpoint: process.env.S3_ENDPOINT,
-    bucketName: process.env.S3_BUCKET_NAME || 'hackaton-uploads',
+    bucketName: process.env.S3_BUCKET || 'diagrams',
     forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
   },
 
