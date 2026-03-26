@@ -62,20 +62,20 @@ export class RabbitMqConsumerService implements OnModuleInit, OnModuleDestroy {
 
       this.connection.on('error', (err) => {
         this.logger.error(`RabbitMQ connection error: ${err.message}`)
-        this.scheduleReconnect(rabbitmqUrl)
+        this.scheduleReconnect()
       })
 
       this.connection.on('close', () => {
         this.logger.warn('RabbitMQ connection closed (consumer), reconnecting...')
-        this.scheduleReconnect(rabbitmqUrl)
+        this.scheduleReconnect()
       })
     } catch (error: any) {
       this.logger.error(`Failed to connect to RabbitMQ: ${error.message}`)
-      this.scheduleReconnect(rabbitmqUrl)
+      this.scheduleReconnect()
     }
   }
 
-  private scheduleReconnect(rabbitmqUrl: string): void {
+  private scheduleReconnect(): void {
     this.connection = null
     this.channel = null
     setTimeout(() => this.connectAndConsume(), 5000)

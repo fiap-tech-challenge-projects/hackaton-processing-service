@@ -1,12 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { v4 as uuidv4 } from 'uuid'
-import { ILlmService, LLM_SERVICE } from '@application/ports/llm.port'
+import { ILlmService } from '@application/ports/llm.port'
 import { IStorageService } from '@application/ports/storage.port'
 import { IEventPublisher } from '@application/ports/event-publisher.port'
-import {
-  IAnalysisResultRepository,
-  ANALYSIS_RESULT_REPOSITORY,
-} from '@domain/repositories/analysis-result.repository'
+import { IAnalysisResultRepository } from '@domain/repositories/analysis-result.repository'
 import { AnalysisResult } from '@domain/entities/analysis-result.entity'
 import { PreProcessorService } from '@infra/ai/pre-processor.service'
 import { PromptService } from '@infra/ai/prompt.service'

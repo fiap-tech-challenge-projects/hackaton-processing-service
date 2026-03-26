@@ -17,7 +17,10 @@ export interface PostProcessedResult {
 
 @Injectable()
 export class PostProcessorService {
-  process(llmResponse: LlmAnalysisResponse, validationResult: ValidationResult): PostProcessedResult {
+  process(
+    llmResponse: LlmAnalysisResponse,
+    validationResult: ValidationResult,
+  ): PostProcessedResult {
     const components = this.buildComponents(llmResponse.components)
     const risks = this.classifyRisks(llmResponse.risks, components)
     const recommendations = this.buildRecommendations(llmResponse.recommendations)
@@ -31,24 +34,13 @@ export class PostProcessorService {
     }
   }
 
-  private buildComponents(
-    raw: LlmAnalysisResponse['components'],
-  ): ComponentVO[] {
+  private buildComponents(raw: LlmAnalysisResponse['components']): ComponentVO[] {
     return raw.map(
-      (c) =>
-        new ComponentVO(
-          c.name,
-          c.type as ComponentType,
-          c.description,
-          c.connections,
-        ),
+      (c) => new ComponentVO(c.name, c.type as ComponentType, c.description, c.connections),
     )
   }
 
-  private classifyRisks(
-    raw: LlmAnalysisResponse['risks'],
-    components: ComponentVO[],
-  ): RiskVO[] {
+  private classifyRisks(raw: LlmAnalysisResponse['risks'], components: ComponentVO[]): RiskVO[] {
     return raw.map((risk) => {
       const severity = this.applyBusinessRules(risk, components)
       return new RiskVO(
@@ -98,18 +90,9 @@ export class PostProcessorService {
     return risk.severity as RiskSeverity
   }
 
-  private buildRecommendations(
-    raw: LlmAnalysisResponse['recommendations'],
-  ): RecommendationVO[] {
+  private buildRecommendations(raw: LlmAnalysisResponse['recommendations']): RecommendationVO[] {
     return raw.map(
-      (r) =>
-        new RecommendationVO(
-          r.title,
-          r.description,
-          r.priority,
-          r.effort,
-          r.relatedRisks,
-        ),
+      (r) => new RecommendationVO(r.title, r.description, r.priority, r.effort, r.relatedRisks),
     )
   }
 }

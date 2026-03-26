@@ -71,9 +71,7 @@ const makeValidAnalysisPayload = (): AnalysisRequestedEventPayload => ({
 })
 
 const makeValidPostProcessed = () => ({
-  components: [
-    new ComponentVO('API Gateway', 'gateway', 'Entry point', ['Service A']),
-  ],
+  components: [new ComponentVO('API Gateway', 'gateway', 'Entry point', ['Service A'])],
   risks: [
     new RiskVO('SPOF Risk', 'Single point of failure', 'high', 'reliability', ['API Gateway']),
   ],
