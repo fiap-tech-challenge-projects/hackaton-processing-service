@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import sharp from 'sharp'
+import * as sharp from 'sharp'
 import { InvalidFileTypeError, ImageTooSmallError } from '@shared/exceptions/domain.exception'
 
 export interface ProcessedImage {

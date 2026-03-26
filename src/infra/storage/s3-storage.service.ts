@@ -19,13 +19,10 @@ export class S3StorageService implements IStorageService {
         endpoint,
         forcePathStyle,
       }),
-      credentials:
-        process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
-          ? {
-              accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-              secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-            }
-          : undefined,
+      credentials: {
+        accessKeyId: process.env.S3_ACCESS_KEY || process.env.AWS_ACCESS_KEY_ID || 'minioadmin',
+        secretAccessKey: process.env.S3_SECRET_KEY || process.env.AWS_SECRET_ACCESS_KEY || 'minioadmin',
+      },
     })
 
     this.bucketName = process.env.S3_BUCKET || 'diagrams'

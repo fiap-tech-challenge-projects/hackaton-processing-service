@@ -35,14 +35,16 @@ export class OutputValidatorService {
 
     parsed = jsonParseCheck.data
 
-    // 2. Check for error response from LLM
-    if (parsed.error) {
-      checks.push({
-        name: 'error_response',
-        passed: false,
-        details: { error: parsed.error, message: parsed.message },
-      })
-      return { isValid: false, checks, confidence: 0 }
+    // 2. Check for error response from LLM (NOT_ARCHITECTURE_DIAGRAM, LOW_QUALITY_IMAGE)
+    if (parsed.error && !parsed.components) {
+      // If the LLM says it's not a diagram, create a minimal valid response
+      const errorResult: LlmAnalysisResponse = {
+        components: [],
+        risks: [{ title: parsed.error, description: parsed.message || 'LLM could not analyze the image', severity: 'low' as any, category: 'maintainability', affectedComponents: [] }],
+        recommendations: [],
+        summary: parsed.message || `LLM returned error: ${parsed.error}`,
+      }
+      return { isValid: true, checks: [{ name: 'error_response', passed: true, details: { llmError: parsed.error } }], confidence: 0.1, parsed: errorResult }
     }
 
     // 3. Required fields
@@ -72,27 +74,77 @@ export class OutputValidatorService {
   }
 
   private parseJson(rawContent: string): { check: ValidationCheck; data: any } {
+    // Strategy 1: Direct parse
     try {
-      // Strip markdown code blocks if present
-      let content = rawContent.trim()
-      if (content.startsWith('```')) {
-        content = content
-          .replace(/^```(?:json)?\s*/i, '')
-          .replace(/\s*```$/, '')
-          .trim()
-      }
+      const data = JSON.parse(rawContent.trim())
+      return { check: { name: 'json_parse', passed: true, details: { strategy: 'direct' } }, data }
+    } catch {}
 
-      const data = JSON.parse(content)
-      return {
-        check: { name: 'json_parse', passed: true, details: {} },
-        data,
+    // Strategy 2: Strip markdown code blocks
+    try {
+      const codeBlockMatch = rawContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+      if (codeBlockMatch) {
+        const data = JSON.parse(codeBlockMatch[1].trim())
+        return { check: { name: 'json_parse', passed: true, details: { strategy: 'code_block' } }, data }
       }
-    } catch (err: any) {
-      return {
-        check: { name: 'json_parse', passed: false, details: { error: err.message } },
-        data: null,
+    } catch {}
+
+    // Strategy 3: Find first { to last } (extract JSON from surrounding text)
+    try {
+      const firstBrace = rawContent.indexOf('{')
+      const lastBrace = rawContent.lastIndexOf('}')
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        const jsonStr = rawContent.substring(firstBrace, lastBrace + 1)
+        const data = JSON.parse(jsonStr)
+        return { check: { name: 'json_parse', passed: true, details: { strategy: 'extract_braces' } }, data }
+      }
+    } catch {}
+
+    // Strategy 4: Build minimal valid response from text analysis
+    try {
+      const components = this.extractComponentsFromText(rawContent)
+      if (components.length > 0) {
+        const data = {
+          components,
+          risks: [{ title: 'Analysis from unstructured LLM response', description: 'LLM did not return structured JSON. Components were extracted from text.', severity: 'low', category: 'maintainability', affectedComponents: [] }],
+          recommendations: [{ title: 'Use structured LLM provider', description: 'Consider using a more capable model that can output structured JSON.', priority: 'medium', effort: 'low', relatedRisks: [] }],
+          summary: rawContent.substring(0, 500),
+        }
+        return { check: { name: 'json_parse', passed: true, details: { strategy: 'text_extraction', warning: 'Extracted from unstructured text' } }, data }
+      }
+    } catch {}
+
+    return {
+      check: { name: 'json_parse', passed: false, details: { error: 'Could not extract valid JSON from LLM response', responsePreview: rawContent.substring(0, 200) } },
+      data: null,
+    }
+  }
+
+  private extractComponentsFromText(text: string): any[] {
+    // Simple heuristic: look for common architecture component keywords
+    const componentKeywords = [
+      'api gateway', 'load balancer', 'database', 'cache', 'queue', 'message broker',
+      'service', 'server', 'client', 'frontend', 'backend', 'microservice',
+      'redis', 'postgresql', 'mongodb', 'rabbitmq', 'kafka', 'nginx', 'docker',
+      'kubernetes', 's3', 'cdn', 'dns', 'firewall', 'proxy',
+    ]
+    const found: any[] = []
+    const lowerText = text.toLowerCase()
+    for (const keyword of componentKeywords) {
+      if (lowerText.includes(keyword) && !found.some(c => c.name.toLowerCase() === keyword)) {
+        found.push({
+          name: keyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+          type: keyword.includes('database') || keyword.includes('sql') || keyword.includes('mongo') || keyword.includes('redis') ? 'database' :
+                keyword.includes('queue') || keyword.includes('broker') || keyword.includes('rabbit') || keyword.includes('kafka') ? 'queue' :
+                keyword.includes('gateway') || keyword.includes('proxy') || keyword.includes('nginx') ? 'gateway' :
+                keyword.includes('cache') || keyword.includes('cdn') ? 'cache' :
+                keyword.includes('s3') || keyword.includes('storage') ? 'storage' : 'service',
+          description: `Identified from text analysis: ${keyword}`,
+          connections: [],
+        })
       }
     }
+    return found
   }
 
   private validateRequiredFields(data: any): ValidationCheck {
