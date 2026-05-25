@@ -114,7 +114,7 @@ describe('OutputValidatorService', () => {
         expect(jsonCheck?.passed).toBe(false)
       })
 
-      it('should fail when JSON has an error field (LLM error response)', () => {
+      it('should treat an LLM error field as a valid low-confidence result', () => {
         const errorResponse = JSON.stringify({
           error: 'NOT_ARCHITECTURE_DIAGRAM',
           message: 'The provided image does not appear to be a software architecture diagram',
@@ -122,12 +122,14 @@ describe('OutputValidatorService', () => {
 
         const result = service.validate(errorResponse)
 
-        expect(result.isValid).toBe(false)
-        expect(result.confidence).toBe(0)
+        // The validator deliberately downgrades an LLM error-response into a
+        // minimal valid result (confidence 0.1) instead of failing the pipeline.
+        expect(result.isValid).toBe(true)
+        expect(result.confidence).toBe(0.1)
 
         const errorCheck = result.checks.find((c) => c.name === 'error_response')
-        expect(errorCheck?.passed).toBe(false)
-        expect(errorCheck?.details?.error).toBe('NOT_ARCHITECTURE_DIAGRAM')
+        expect(errorCheck?.passed).toBe(true)
+        expect(errorCheck?.details?.llmError).toBe('NOT_ARCHITECTURE_DIAGRAM')
       })
 
       it('should fail when required fields are missing', () => {

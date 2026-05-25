@@ -12,6 +12,7 @@ import { LLM_SERVICE } from '@application/ports/llm.port'
         const provider = process.env.LLM_PROVIDER || 'ollama'
         switch (provider) {
           case 'claude':
+          case 'anthropic':
             return new ClaudeLlmAdapter()
           case 'openai':
             return new OpenAiLlmAdapter()
